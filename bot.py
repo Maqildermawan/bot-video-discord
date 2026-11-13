@@ -49,6 +49,7 @@ async def on_message(message):
                     "noplaylist": True,
                     "quiet": True,
                     # Bypass proteksi YouTube di server cloud tanpa browser lokal
+                    "format": "best[ext=mp4]/best",
                     "extractor_args": {
                         "youtube": {
                             "player_client": ["android", "web"]
