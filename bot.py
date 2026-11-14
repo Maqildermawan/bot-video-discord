@@ -32,19 +32,19 @@ def upload_to_catbox(file_path):
             files = {"fileToUpload": f}
             data = {"reqtype": "fileupload"}
             response = requests.post(url, data=data, files=files, timeout=60)
-            print(f"Catbox Status: {response.status_code}")
-            print(f"Catbox Response: {response.text}")
+            print(f"[CATBOX] Status: {response.status_code}")
+            print(f"[CATBOX] Response: {response.text}")
             
             if response.status_code == 200 and "catbox.moe" in response.text:
                 return response.text.strip()
     except Exception as e:
-        print(f"Gagal upload ke Catbox: {e}")
+        print(f"[CATBOX] Gagal upload: {e}")
     return None
 
 @bot.event
 async def on_ready():
+    print("=== BOT CATBOX 7MB AKTIF ===")
     print(f"Bot masuk sebagai {bot.user} (ID: {bot.user.id})")
-    print("Siap mendeteksi video dari TikTok, IG, Shorts, & Twitter/X!")
 
 @bot.event
 async def on_message(message):
@@ -57,7 +57,6 @@ async def on_message(message):
         url = match.group(0)
         downloaded_file = None
 
-        # Tampilkan status typing saat bot mendownload video
         async with message.channel.typing():
             try:
                 ydl_opts = {
@@ -72,10 +71,17 @@ async def on_message(message):
                     },
                 }
 
-                # Mengunduh video menggunakan yt-dlp
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
+                    info = yt_dlp.YoutubeDL(ydl_opts).extract_info(url, download=True)
+                    # Ambil path file aktual yang berhasil diunduh/digabungkan
                     downloaded_file = ydl.prepare_filename(info)
+                    if not os.path.exists(downloaded_file):
+                        # Fallback jika ekstensi berubah setelah post-processing
+                        base, _ = os.path.splitext(downloaded_file)
+                        for ext in ['.mp4', '.mkv', '.webm', '.mov']:
+                            if os.path.exists(base + ext):
+                                downloaded_file = base + ext
+                                break
 
                     uploader = (
                         info.get("uploader")
@@ -92,15 +98,13 @@ async def on_message(message):
                 if downloaded_file and os.path.exists(downloaded_file):
                     file_size = os.path.getsize(downloaded_file)
                     file_size_mb = file_size / (1024 * 1024)
-                    print(f"File berhasil diunduh. Ukuran: {file_size_mb:.2f} MB")
+                    print(f"[DOWNLOAD] File ditemukan: {downloaded_file} | Ukuran: {file_size_mb:.2f} MB")
                     
-                    # Batasi maksimal 50MB sesuai permintaan
                     if file_size > 50 * 1024 * 1024:
                         os.remove(downloaded_file)
                         await message.reply("❌ Video terlalu besar (>50MB).")
                         return
 
-                    # Membuat tampilan Embed yang rapi
                     embed = discord.Embed(
                         description=description[:4096], color=discord.Color.blurple()
                     )
@@ -110,18 +114,13 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    # SKENARIO 1: Jika file <= 7MB, kirim langsung sebagai file Discord
-                    if file_size <= 7 * 1024 * 1024:
-                        print(f"Ukuran {file_size_mb:.2f}MB <= 7MB. Mengirim langsung ke Discord...")
-                        file = discord.File(downloaded_file, filename="video.mp4")
-                        await message.reply(embed=embed, file=file)
-
-                    # SKENARIO 2: Jika file > 7MB, Wajib Upload ke Cloud Catbox (Mencegah Error 413)
-                    else:
-                        print(f"Ukuran {file_size_mb:.2f}MB > 7MB. Mengunggah ke Catbox.moe...")
+                    # PENGAMAN MUTLAK: Jika > 7MB, WAJIB ke Catbox. Tidak akan pernah nyentuh Discord.File!
+                    if file_size > 7 * 1024 * 1024:
+                        print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB > 7MB. Mengunggah ke Catbox.moe...")
                         file_url = upload_to_catbox(downloaded_file)
+                        
                         if file_url:
-                            print(f"Berhasil upload! URL: {file_url}")
+                            print(f"[ROUTING] Berhasil upload ke Catbox: {file_url}")
                             embed.add_field(
                                 name="📦 Video Berukuran Besar (>7MB)",
                                 value=f"[Klik di sini untuk menonton / mengunduh video]({file_url})",
@@ -129,16 +128,21 @@ async def on_message(message):
                             )
                             await message.reply(embed=embed)
                         else:
-                            print("Gagal upload ke Catbox!")
+                            print("[ROUTING] Gagal upload ke Catbox!")
                             await message.reply("❌ Gagal mengunggah video besar ke server cloud cadangan.")
+                    
+                    # Jika <= 7MB, aman dikirim langsung ke Discord
+                    else:
+                        print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB <= 7MB. Mengirim langsung ke Discord...")
+                        file = discord.File(downloaded_file, filename="video.mp4")
+                        await message.reply(embed=embed, file=file)
 
-                    # Hapus file dari penyimpanan lokal setelah selesai
                     os.remove(downloaded_file)
                 else:
                     await message.reply("Gagal mengunduh video dari tautan tersebut.")
 
             except Exception as e:
-                print(f"Error saat memproses video: {e}")
+                print(f"[ERROR] Terjadi kesalahan: {e}")
                 await message.reply(f"Terjadi kesalahan saat memproses video: `{e}`")
                 if downloaded_file and os.path.exists(downloaded_file):
                     os.remove(downloaded_file)
