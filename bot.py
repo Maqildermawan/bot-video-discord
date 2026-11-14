@@ -94,6 +94,8 @@ async def on_message(message):
 
                 if downloaded_file and os.path.exists(downloaded_file):
                     file_size = os.path.getsize(downloaded_file)
+                    file_size_mb = file_size / (1024 * 1024)
+                    print(f"File berhasil diunduh. Ukuran: {file_size_mb:.2f} MB")
                     
                     # Batasi maksimal 50MB sesuai permintaan
                     if file_size > 50 * 1024 * 1024:
@@ -111,15 +113,18 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    # SKENARIO 1: Jika file <= 25MB, kirim langsung sebagai file Discord
+                    # SKENARIO 1: Jika file <= 24MB, kirim langsung sebagai file Discord
                     if file_size <= 24 * 1024 * 1024:
+                        print("Ukuran <= 24MB. Mengirim langsung ke Discord...")
                         file = discord.File(downloaded_file, filename="video.mp4")
                         await message.reply(embed=embed, file=file)
 
-                    # SKENARIO 2: Jika file di atas 25MB hingga 50MB, upload ke Cloud agar lolos dari limit Discord
+                    # SKENARIO 2: Jika file > 24MB hingga 50MB, upload ke Cloud Catbox
                     else:
+                        print("Ukuran > 24MB. Mengunggah ke Catbox.moe...")
                         file_url = upload_to_catbox(downloaded_file)
                         if file_url:
+                            print(f"Berhasil upload! URL: {file_url}")
                             embed.add_field(
                                 name="📦 Video Berukuran Besar (>25MB)",
                                 value=f"[Klik di sini untuk menonton / mengunduh video]({file_url})",
@@ -127,6 +132,7 @@ async def on_message(message):
                             )
                             await message.reply(embed=embed)
                         else:
+                            print("Gagal upload ke Catbox!")
                             await message.reply("❌ Gagal mengunggah video besar ke server cloud cadangan.")
 
                     # Hapus file dari penyimpanan lokal Railway setelah selesai
