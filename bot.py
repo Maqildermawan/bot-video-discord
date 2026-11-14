@@ -30,7 +30,6 @@ def upload_to_cloud(file_path):
             files = {"files[]": f}
             response = requests.post(url, files=files, timeout=60)
             print(f"[UGUU] Status: {response.status_code}")
-            print(f"[UGUU] Response: {response.text}")
             
             if response.status_code == 200:
                 try:
@@ -58,6 +57,12 @@ async def on_message(message):
     match = MULTI_PLATFORM_REGEX.search(message.content)
     if match:
         url = match.group(0)
+
+        # Cek jika tautan adalah slideshow foto TikTok
+        if "tiktok.com" in url and "/photo/" in url:
+            await message.reply("❌ Maaf, tautan tersebut adalah **postingan foto/slideshow TikTok**, bukan video.")
+            return
+
         downloaded_file = None
 
         async with message.channel.typing():
@@ -69,12 +74,9 @@ async def on_message(message):
                     "format": "best[ext=mp4]/best",
                     "extractor_args": {
                         "youtube": {
-                            "player_client": ["mweb", "web"]
+                            "player_client": ["web"]
                         }
                     },
-                    "http_headers": {
-                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
-                    }
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -140,8 +142,17 @@ async def on_message(message):
                     await message.reply("Gagal mengunduh video dari tautan tersebut.")
 
             except Exception as e:
-                print(f"[ERROR] Terjadi kesalahan: {e}")
-                await message.reply(f"Terjadi kesalahan saat memproses video: `{e}`")
+                error_msg = str(e)
+                print(f"[ERROR] Terjadi kesalahan: {error_msg}")
+                if "429" in error_msg or "Too Many Requests" in error_msg:
+                    await message.reply("❌ Terkena limit pembatasan (HTTP 429) dari YouTube. Coba beberapa saat lagi.")
+                elif "Sign in" in error_msg or "bot" in error_msg:
+                    await message.reply("❌ YouTube mendeteksi permintaan otomatis (antibot).")
+                elif "Video not available" in error_msg:
+                    await message.reply("❌ Gagal mengunduh: Video tidak tersedia.")
+                else:
+                    await message.reply(f"Terjadi kesalahan saat memproses video: `{error_msg[:100]}`")
+                
                 if downloaded_file and os.path.exists(downloaded_file):
                     os.remove(downloaded_file)
 
