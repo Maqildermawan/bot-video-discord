@@ -41,15 +41,15 @@ async def on_message(message):
         url = match.group(0)
         downloaded_file = None
 
-        # Tampilkan status typing saat bot mendownload video
+        # Tampilkan status typing saat bot mendandownload video
         async with message.channel.typing():
             try:
                 ydl_opts = {
                     "outtmpl": f"media_{message.id}.%(ext)s",
                     "noplaylist": True,
                     "quiet": True,
-                    "format": "best[height<=360]/best[height<=480]/best",
-                    "maxfilesize": 18 * 1024 * 1024,  # Batasi maksimal 18MB agar total payload aman di bawah 25MB
+                    # Pilih format mp4 tunggal agar tidak butuh ffmpeg
+                    "format": "best[ext=mp4]/best",
                     "extractor_args": {
                         "youtube": {
                             "player_client": ["android", "web"]
@@ -74,15 +74,13 @@ async def on_message(message):
                         or "Video Media Sosial"
                     )
 
-                # Cek apakah file berhasil diunduh dan ada di direktori
+                # Cek apakah file berhasil diunduh dan batasi maksimal 50MB
                 if downloaded_file and os.path.exists(downloaded_file):
                     file_size = os.path.getsize(downloaded_file)
-                    
-                    # Batasi file fisik di bawah 19MB agar sisa kuota cukup untuk embed & header Discord
-                    if file_size > 19 * 1024 * 1024:
+                    if file_size > 50 * 1024 * 1024:
                         os.remove(downloaded_file)
                         await message.reply(
-                            "❌ Video terlalu besar untuk diunggah ke Discord (>25MB total payload)."
+                            "❌ Video terlalu besar untuk diunggah ke Discord (>50MB)."
                         )
                         return
 
@@ -112,17 +110,9 @@ async def on_message(message):
 
             except Exception as e:
                 print(f"Error saat memproses video: {e}")
-                
-                error_str = str(e).lower()
-                if "413" in error_str or "too large" in error_str or "filesize" in error_str:
-                    await message.reply(
-                        "❌ Video terlalu besar untuk diunggah ke Discord (>25MB)."
-                    )
-                else:
-                    await message.reply(
-                        f"Terjadi kesalahan saat memproses video: `{e}`"
-                    )
-                
+                await message.reply(
+                    f"Terjadi kesalahan saat memproses video: `{e}`"
+                )
                 if downloaded_file and os.path.exists(downloaded_file):
                     os.remove(downloaded_file)
 
