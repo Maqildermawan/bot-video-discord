@@ -75,6 +75,16 @@ async def on_message(message):
 
                 # Cek apakah file berhasil diunduh dan ada di direktori
                 if downloaded_file and os.path.exists(downloaded_file):
+                    file_size = os.path.getsize(downloaded_file)
+                    
+                    # Batasi langsung di bawah 24MB agar aman dari limit 25MB Discord
+                    if file_size > 24 * 1024 * 1024:
+                        os.remove(downloaded_file)
+                        await message.reply(
+                            "❌ Video terlalu besar untuk diunggah ke Discord (>25MB)."
+                        )
+                        return
+
                     file = discord.File(downloaded_file, filename="video.mp4")
 
                     # Membuat tampilan Embed yang rapi
@@ -101,7 +111,8 @@ async def on_message(message):
 
             except Exception as e:
                 print(f"Error saat memproses video: {e}")
-                # Tangkap error jika file terlalu besar dari Discord (413)
+                
+                # Tangkap error 413 / too large jika lolos dari pengecekan awal
                 if "413" in str(e) or "too large" in str(e).lower():
                     await message.reply(
                         "❌ Video terlalu besar untuk diunggah ke Discord (>25MB)."
