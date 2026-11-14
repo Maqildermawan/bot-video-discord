@@ -48,9 +48,14 @@ async def on_message(message):
             "outtmpl": f"media_{message.id}.%(ext)s",
             "noplaylist": True,
             "quiet": True,
-            # Meminjam cookies dari browser Chrome (pastikan kamu sudah login IG di Chrome)
-            # Jika pakai Edge, ganti 'chrome' menjadi 'edge'
-            "cookiefrombrowser": ("chrome",),
+            # Pilih format mp4 tunggal agar tidak butuh ffmpeg
+            "format": "best[ext=mp4]/best",
+            # Bypass proteksi YouTube di server cloud tanpa browser lokal
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["android", "web"]
+                }
+            },
         }
 
         # Mengunduh video menggunakan yt-dlp
@@ -70,16 +75,8 @@ async def on_message(message):
               or "Video Media Sosial"
           )
 
-        # Cek apakah file berhasil diunduh dan ada di direktori
+        # Cek apakah file berhasil diunduh dan ada di direktori (tanpa batasan ukuran)
         if downloaded_file and os.path.exists(downloaded_file):
-          file_size = os.path.getsize(downloaded_file)
-          if file_size > 50 * 1024 * 1024:
-            os.remove(downloaded_file)
-            await message.reply(
-                "❌ Video terlalu besar untuk diunggah ke Discord (>50MB)."
-            )
-            return
-
           file = discord.File(downloaded_file, filename="video.mp4")
 
           # Membuat tampilan Embed yang rapi
