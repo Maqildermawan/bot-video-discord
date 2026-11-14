@@ -45,7 +45,7 @@ def upload_to_cloud(file_path):
 
 @bot.event
 async def on_ready():
-    print("=== BOT MULTI-PLATFORM AKTIF ===")
+    print("=== BOT MULTI-PLATFORM STABLE ===")
     print(f"Bot masuk sebagai {bot.user} (ID: {bot.user.id})")
 
 @bot.event
@@ -67,19 +67,21 @@ async def on_message(message):
 
         async with message.channel.typing():
             try:
-                # Konfigurasi anti-bot menggunakan client iOS untuk YouTube & Header Browser untuk TikTok
+                # Konfigurasi yt-dlp yang dioptimalkan untuk server cloud (Railway)
                 ydl_opts = {
                     "outtmpl": f"media_{message.id}.%(ext)s",
                     "noplaylist": True,
                     "quiet": True,
                     "format": "best[ext=mp4]/best",
+                    "geo_bypass": True,
+                    "nocheckcertificate": True,
                     "extractor_args": {
                         "youtube": {
-                            "player_client": ["ios"]
+                            "player_client": ["android", "web"]
                         }
                     },
                     "http_headers": {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                         "Accept-Language": "en-US,en;q=0.9",
                     }
                 }
@@ -149,12 +151,12 @@ async def on_message(message):
             except Exception as e:
                 error_msg = str(e)
                 print(f"[ERROR] Terjadi kesalahan: {error_msg}")
-                if "429" in error_msg or "Too Many Requests" in error_msg:
-                    await message.reply("❌ Terkena pembatasan rate-limit (HTTP 429) dari YouTube. Coba beberapa saat lagi.")
+                if "Video not available" in error_msg:
+                    await message.reply("❌ Gagal mengunduh: TikTok memblokir IP server atau video dihapus/privat.")
                 elif "Sign in" in error_msg or "bot" in error_msg:
-                    await message.reply("❌ YouTube mendeteksi permintaan otomatis.")
-                elif "Video not available" in error_msg:
-                    await message.reply("❌ Gagal mengunduh: Video TikTok/YouTube tidak tersedia, privat, atau dihapus.")
+                    await message.reply("❌ YouTube memblokir akses bot sementara.")
+                elif "DRM protected" in error_msg:
+                    await message.reply("❌ Gagal mengunduh: Video ini dilindungi hak cipta DRM.")
                 else:
                     await message.reply(f"Terjadi kesalahan saat memproses video: `{error_msg[:100]}`")
                 
