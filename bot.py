@@ -48,8 +48,9 @@ async def on_message(message):
             "outtmpl": f"media_{message.id}.%(ext)s",
             "noplaylist": True,
             "quiet": True,
-            # Pilih format mp4 tunggal agar tidak butuh ffmpeg
-            "format": "best[ext=mp4]/best",
+            # Batasi ukuran maksimal file yang didownload agar aman untuk Discord (25MB)
+            "max_filesize": 25 * 1024 * 1024,
+            "format": "best[ext=mp4]/best[height<=480]/best",
             # Bypass proteksi YouTube di server cloud tanpa browser lokal
             "extractor_args": {
                 "youtube": {
