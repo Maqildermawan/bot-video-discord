@@ -67,6 +67,7 @@ async def on_message(message):
 
         async with message.channel.typing():
             try:
+                # Konfigurasi anti-bot menggunakan client iOS untuk YouTube & Header Browser untuk TikTok
                 ydl_opts = {
                     "outtmpl": f"media_{message.id}.%(ext)s",
                     "noplaylist": True,
@@ -74,9 +75,13 @@ async def on_message(message):
                     "format": "best[ext=mp4]/best",
                     "extractor_args": {
                         "youtube": {
-                            "player_client": ["android", "web"]
+                            "player_client": ["ios"]
                         }
                     },
+                    "http_headers": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        "Accept-Language": "en-US,en;q=0.9",
+                    }
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -144,12 +149,12 @@ async def on_message(message):
             except Exception as e:
                 error_msg = str(e)
                 print(f"[ERROR] Terjadi kesalahan: {error_msg}")
-                if "DRM protected" in error_msg:
-                    await message.reply("❌ Gagal mengunduh: Video ini dilindungi oleh hak cipta **DRM** oleh YouTube.")
+                if "429" in error_msg or "Too Many Requests" in error_msg:
+                    await message.reply("❌ Terkena pembatasan rate-limit (HTTP 429) dari YouTube. Coba beberapa saat lagi.")
                 elif "Sign in" in error_msg or "bot" in error_msg:
-                    await message.reply("❌ YouTube memblokir akses bot sementara karena proteksi region/antibot.")
+                    await message.reply("❌ YouTube mendeteksi permintaan otomatis.")
                 elif "Video not available" in error_msg:
-                    await message.reply("❌ Gagal mengunduh: Video tidak tersedia atau sudah dihapus.")
+                    await message.reply("❌ Gagal mengunduh: Video TikTok/YouTube tidak tersedia, privat, atau dihapus.")
                 else:
                     await message.reply(f"Terjadi kesalahan saat memproses video: `{error_msg[:100]}`")
                 
