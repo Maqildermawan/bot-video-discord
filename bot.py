@@ -24,7 +24,7 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file besar ke Catbox.moe secara anonim
+# Fungsi untuk mengunggah file ke Catbox.moe secara anonim
 def upload_to_catbox(file_path):
     url = "https://catbox.moe/api.php"
     try:
@@ -110,20 +110,20 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    # SKENARIO 1: Jika file <= 8MB, kirim langsung sebagai file Discord
-                    if file_size <= 8 * 1024 * 1024:
-                        print("Ukuran <= 8MB. Mengirim langsung ke Discord...")
+                    # SKENARIO 1: Jika file <= 7MB, kirim langsung sebagai file Discord
+                    if file_size <= 7 * 1024 * 1024:
+                        print(f"Ukuran {file_size_mb:.2f}MB <= 7MB. Mengirim langsung ke Discord...")
                         file = discord.File(downloaded_file, filename="video.mp4")
                         await message.reply(embed=embed, file=file)
 
-                    # SKENARIO 2: Jika file > 8MB hingga 50MB, Wajib Upload ke Cloud Catbox (Mencegah Error 413)
+                    # SKENARIO 2: Jika file > 7MB, Wajib Upload ke Cloud Catbox (Mencegah Error 413)
                     else:
-                        print("Ukuran > 8MB. Mengunggah ke Catbox.moe...")
+                        print(f"Ukuran {file_size_mb:.2f}MB > 7MB. Mengunggah ke Catbox.moe...")
                         file_url = upload_to_catbox(downloaded_file)
                         if file_url:
                             print(f"Berhasil upload! URL: {file_url}")
                             embed.add_field(
-                                name="📦 Video Berukuran Besar (>8MB)",
+                                name="📦 Video Berukuran Besar (>7MB)",
                                 value=f"[Klik di sini untuk menonton / mengunduh video]({file_url})",
                                 inline=False
                             )
