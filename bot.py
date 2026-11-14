@@ -49,6 +49,7 @@ async def on_message(message):
                     "noplaylist": True,
                     "quiet": True,
                     "format": "best[height<=480]/best",
+                    "maxfilesize": 24 * 1024 * 1024,  # Batasi maksimal unduhan 24MB oleh yt-dlp
                     "extractor_args": {
                         "youtube": {
                             "player_client": ["android", "web"]
