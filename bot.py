@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import discord
 from discord.ext import commands
 import yt_dlp
@@ -22,9 +23,9 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi upload menggunakan Uguu.se (100% aman dan tembus di server cloud Railway)
+# Fungsi upload ke Uguu.se dengan pembaca JSON yang aman
 def upload_to_cloud(file_path):
-    url = "https://uguu.se/upload?output=text"
+    url = "https://uguu.se/upload"
     try:
         with open(file_path, "rb") as f:
             files = {"files[]": f}
@@ -32,8 +33,17 @@ def upload_to_cloud(file_path):
             print(f"[UGUU] Status: {response.status_code}")
             print(f"[UGUU] Response: {response.text}")
             
-            if response.status_code == 200 and "uguu.se" in response.text:
-                return response.text.strip()
+            if response.status_code == 200:
+                try:
+                    # Uguu mengembalikan JSON, kita ambil URL-nya dengan aman
+                    data = response.json()
+                    if data.get("success") and data.get("files"):
+                        file_url = data["files"][0]["url"]
+                        return file_url.strip()
+                except json.JSONDecodeError:
+                    # Fallback jika responsnya berupa teks mentah
+                    if "uguu.se" in response.text:
+                        return response.text.strip()
     except Exception as e:
         print(f"[UGUU] Gagal upload: {e}")
     return None
@@ -109,7 +119,7 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    # Jika file > 24MB, upload ke Uguu.se (Mencegah error 413 Discord)
+                    # Jika file > 24MB, upload ke Uguu.se
                     if file_size > 24 * 1024 * 1024:
                         print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB > 24MB. Mengunggah ke Uguu.se...")
                         file_url = upload_to_cloud(downloaded_file)
@@ -126,7 +136,7 @@ async def on_message(message):
                             print("[ROUTING] Gagal upload ke Uguu!")
                             await message.reply("❌ Gagal mengunggah video besar ke server cloud cadangan.")
                     
-                    # Jika <= 24MB, kirim langsung ke Discord dengan aman
+                    # Jika <= 24MB, kirim langsung ke Discord
                     else:
                         print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB <= 24MB. Mengirim langsung ke Discord...")
                         file = discord.File(downloaded_file, filename="video.mp4")
