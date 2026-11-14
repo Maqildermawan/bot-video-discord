@@ -48,8 +48,7 @@ async def on_message(message):
                     "outtmpl": f"media_{message.id}.%(ext)s",
                     "noplaylist": True,
                     "quiet": True,
-                    # Bypass proteksi YouTube di server cloud tanpa browser lokal
-                    "format": "best[height<=480][ext=mp4]/best[height<=480]/best",
+                    "format": "best[height<=480]/best",
                     "extractor_args": {
                         "youtube": {
                             "player_client": ["android", "web"]
@@ -76,14 +75,6 @@ async def on_message(message):
 
                 # Cek apakah file berhasil diunduh dan ada di direktori
                 if downloaded_file and os.path.exists(downloaded_file):
-                    file_size = os.path.getsize(downloaded_file)
-                    if file_size > 24 * 1024 * 1024:
-                        os.remove(downloaded_file)
-                        await message.reply(
-                            "❌ Video terlalu besar untuk diunggah ke Discord (>50MB)."
-                        )
-                        return
-
                     file = discord.File(downloaded_file, filename="video.mp4")
 
                     # Membuat tampilan Embed yang rapi
@@ -110,9 +101,16 @@ async def on_message(message):
 
             except Exception as e:
                 print(f"Error saat memproses video: {e}")
-                await message.reply(
-                    f"Terjadi kesalahan saat memproses video: `{e}`"
-                )
+                # Tangkap error jika file terlalu besar dari Discord (413)
+                if "413" in str(e) or "too large" in str(e).lower():
+                    await message.reply(
+                        "❌ Video terlalu besar untuk diunggah ke Discord (>25MB)."
+                    )
+                else:
+                    await message.reply(
+                        f"Terjadi kesalahan saat memproses video: `{e}`"
+                    )
+                
                 if downloaded_file and os.path.exists(downloaded_file):
                     os.remove(downloaded_file)
 
