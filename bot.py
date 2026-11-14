@@ -69,9 +69,12 @@ async def on_message(message):
                     "format": "best[ext=mp4]/best",
                     "extractor_args": {
                         "youtube": {
-                            "player_client": ["android", "web"]
+                            "player_client": ["mweb", "web"]
                         }
                     },
+                    "http_headers": {
+                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+                    }
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
