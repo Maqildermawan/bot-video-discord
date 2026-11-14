@@ -48,8 +48,9 @@ async def on_message(message):
                     "outtmpl": f"media_{message.id}.%(ext)s",
                     "noplaylist": True,
                     "quiet": True,
-                    "format": "best[height<=480]/best",
-                    "maxfilesize": 24 * 1024 * 1024,  # Batasi maksimal unduhan 24MB oleh yt-dlp
+                    # Turunkan resolusi ke 360p agar ukuran file dijamin aman di bawah limit Discord
+                    "format": "best[height<=360]/best[height<=480]/best",
+                    "maxfilesize": 20 * 1024 * 1024,  # Batasi maksimal 20MB agar sangat aman
                     "extractor_args": {
                         "youtube": {
                             "player_client": ["android", "web"]
@@ -78,8 +79,7 @@ async def on_message(message):
                 if downloaded_file and os.path.exists(downloaded_file):
                     file_size = os.path.getsize(downloaded_file)
                     
-                    # Batasi langsung di bawah 24MB agar aman dari limit 25MB Discord
-                    if file_size > 24 * 1024 * 1024:
+                    if file_size > 22 * 1024 * 1024:
                         os.remove(downloaded_file)
                         await message.reply(
                             "❌ Video terlalu besar untuk diunggah ke Discord (>25MB)."
@@ -113,8 +113,9 @@ async def on_message(message):
             except Exception as e:
                 print(f"Error saat memproses video: {e}")
                 
-                # Tangkap error 413 / too large jika lolos dari pengecekan awal
-                if "413" in str(e) or "too large" in str(e).lower():
+                # Tangkap error 413 / ukuran terlalu besar
+                error_str = str(e).lower()
+                if "413" in error_str or "too large" in error_str or "filesize" in error_str:
                     await message.reply(
                         "❌ Video terlalu besar untuk diunggah ke Discord (>25MB)."
                     )
