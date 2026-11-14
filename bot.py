@@ -67,6 +67,7 @@ async def on_message(message):
 
         async with message.channel.typing():
             try:
+                # Konfigurasi anti-bot stabil untuk YouTube & TikTok di Server Cloud
                 ydl_opts = {
                     "outtmpl": f"media_{message.id}.%(ext)s",
                     "noplaylist": True,
@@ -74,9 +75,13 @@ async def on_message(message):
                     "format": "best[ext=mp4]/best",
                     "extractor_args": {
                         "youtube": {
-                            "player_client": ["web"]
+                            "player_client": ["android"]
                         }
                     },
+                    "http_headers": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                        "Accept-Language": "en-US,en;q=0.9",
+                    }
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -144,12 +149,10 @@ async def on_message(message):
             except Exception as e:
                 error_msg = str(e)
                 print(f"[ERROR] Terjadi kesalahan: {error_msg}")
-                if "429" in error_msg or "Too Many Requests" in error_msg:
-                    await message.reply("❌ Terkena limit pembatasan (HTTP 429) dari YouTube. Coba beberapa saat lagi.")
-                elif "Sign in" in error_msg or "bot" in error_msg:
-                    await message.reply("❌ YouTube mendeteksi permintaan otomatis (antibot).")
+                if "Sign in" in error_msg or "bot" in error_msg:
+                    await message.reply("❌ YouTube memblokir akses bot sementara. Coba beberapa saat lagi.")
                 elif "Video not available" in error_msg:
-                    await message.reply("❌ Gagal mengunduh: Video tidak tersedia.")
+                    await message.reply("❌ Gagal mengunduh: Video TikTok/YouTube tidak tersedia atau privat.")
                 else:
                     await message.reply(f"Terjadi kesalahan saat memproses video: `{error_msg[:100]}`")
                 
