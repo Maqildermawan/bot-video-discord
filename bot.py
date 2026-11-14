@@ -118,14 +118,13 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    # Routing ke Uguu jika > 24MB (Kirim link mentah agar auto-embed video player)
+                    # Routing ke Uguu jika > 24MB
                     if file_size > 24 * 1024 * 1024:
                         print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB > 24MB. Mengunggah ke Uguu...")
                         file_url = upload_to_cloud(downloaded_file)
                         
                         if file_url:
                             print(f"[ROUTING] Berhasil upload ke Uguu: {file_url}")
-                            # Kirim embed informasi dulu, lalu kirim link mentah Uguu di bawahnya
                             await message.reply(embed=embed)
                             await message.channel.send(file_url)
                         else:
