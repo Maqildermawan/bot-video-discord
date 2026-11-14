@@ -24,7 +24,7 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file ke Catbox.moe secara anonim
+# Fungsi untuk mengunggah file besar ke Catbox.moe secara anonim
 def upload_to_catbox(file_path):
     url = "https://catbox.moe/api.php"
     try:
@@ -132,7 +132,7 @@ async def on_message(message):
                             print("Gagal upload ke Catbox!")
                             await message.reply("❌ Gagal mengunggah video besar ke server cloud cadangan.")
 
-                    # Hapus file dari penyimpanan lokal Railway setelah selesai
+                    # Hapus file dari penyimpanan lokal setelah selesai
                     os.remove(downloaded_file)
                 else:
                     await message.reply("Gagal mengunduh video dari tautan tersebut.")
