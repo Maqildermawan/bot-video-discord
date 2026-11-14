@@ -22,35 +22,25 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file ke Litterbox dengan header browser & MIME type
-def upload_to_catbox(file_path):
-    url = "https://litterbox.moe/api.php"
+# Fungsi upload alternatif menggunakan Uguu.se (aman untuk server cloud Railway)
+def upload_to_cloud(file_path):
+    url = "https://uguu.se/upload?output=text"
     try:
-        filename = os.path.basename(file_path)
         with open(file_path, "rb") as f:
-            # Menggunakan tuple dengan menyertakan nama file dan MIME type video/mp4
-            files = {"fileToUpload": (filename, f, "video/mp4")}
-            data = {
-                "reqtype": "fileupload",
-                "time": "24h"  # File disimpan selama 24 jam
-            }
-            # Header browser wajib agar tidak diblokir oleh server Litterbox
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            response = requests.post(url, data=data, files=files, headers=headers, timeout=60)
-            print(f"[LITTERBOX] Status: {response.status_code}")
-            print(f"[LITTERBOX] Response: {response.text}")
+            files = {"files[]": f}
+            response = requests.post(url, files=files, timeout=60)
+            print(f"[UGUU] Status: {response.status_code}")
+            print(f"[UGUU] Response: {response.text}")
             
-            if response.status_code == 200 and "litterbox.moe" in response.text:
+            if response.status_code == 200 and "uguu.se" in response.text:
                 return response.text.strip()
     except Exception as e:
-        print(f"[LITTERBOX] Gagal upload: {e}")
+        print(f"[UGUU] Gagal upload: {e}")
     return None
 
 @bot.event
 async def on_ready():
-    print("=== BOT CATBOX 7MB AKTIF ===")
+    print("=== BOT MULTI-PLATFORM AKTIF ===")
     print(f"Bot masuk sebagai {bot.user} (ID: {bot.user.id})")
 
 @bot.event
@@ -119,23 +109,26 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    if file_size > 7 * 1024 * 1024:
-                        print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB > 7MB. Mengunggah ke Litterbox...")
-                        file_url = upload_to_catbox(downloaded_file)
+                    # Jika file > 24MB, upload ke Uguu.se (Mencegah error 413 Discord)
+                    if file_size > 24 * 1024 * 1024:
+                        print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB > 24MB. Mengunggah ke Uguu.se...")
+                        file_url = upload_to_cloud(downloaded_file)
                         
                         if file_url:
-                            print(f"[ROUTING] Berhasil upload ke Litterbox: {file_url}")
+                            print(f"[ROUTING] Berhasil upload ke Uguu: {file_url}")
                             embed.add_field(
-                                name="📦 Video Berukuran Besar (>7MB)",
+                                name="📦 Video Berukuran Besar (>24MB)",
                                 value=f"[Klik di sini untuk menonton / mengunduh video]({file_url})",
                                 inline=False
                             )
                             await message.reply(embed=embed)
                         else:
-                            print("[ROUTING] Gagal upload ke Litterbox!")
+                            print("[ROUTING] Gagal upload ke Uguu!")
                             await message.reply("❌ Gagal mengunggah video besar ke server cloud cadangan.")
+                    
+                    # Jika <= 24MB, kirim langsung ke Discord dengan aman
                     else:
-                        print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB <= 7MB. Mengirim langsung ke Discord...")
+                        print(f"[ROUTING] Ukuran {file_size_mb:.2f}MB <= 24MB. Mengirim langsung ke Discord...")
                         file = discord.File(downloaded_file, filename="video.mp4")
                         await message.reply(embed=embed, file=file)
 
