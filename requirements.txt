@@ -13,7 +13,7 @@ propcache==0.5.4
 pycparser==3.12
 typing_extensions==4.16.0
 yarl==1.25.1
-yt-dlp==2026.10.26
+yt-dlp>=2024.10.07
 discord.py
 yt-dlp
 requests
