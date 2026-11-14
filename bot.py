@@ -48,8 +48,9 @@ async def on_message(message):
             "outtmpl": f"media_{message.id}.%(ext)s",
             "noplaylist": True,
             "quiet": True,
-            # Batasi resolusi maksimal 480p/720p agar ukuran file aman di bawah limit Discord (25MB)
-            "format": "best[height<=480][ext=mp4]/best[height<=480]/best",
+            # Pilih format mp4 tunggal agar tidak butuh ffmpeg
+            "format": "best[ext=mp4]/best",
+            # Bypass proteksi YouTube di server cloud tanpa browser lokal
             "extractor_args": {
                 "youtube": {
                     "player_client": ["android", "web"]
@@ -74,8 +75,16 @@ async def on_message(message):
               or "Video Media Sosial"
           )
 
-        # Cek apakah file berhasil diunduh dan ada di direktori (tanpa batasan ukuran)
+        # Cek apakah file berhasil diunduh dan batasi maksimal 50MB
         if downloaded_file and os.path.exists(downloaded_file):
+          file_size = os.path.getsize(downloaded_file)
+          if file_size > 50 * 1024 * 1024:
+            os.remove(downloaded_file)
+            await message.reply(
+                "❌ Video terlalu besar untuk diunggah ke Discord (>50MB)."
+            )
+            return
+
           file = discord.File(downloaded_file, filename="video.mp4")
 
           # Membuat tampilan Embed yang rapi
