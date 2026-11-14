@@ -24,21 +24,22 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file ke Litterbox (Layanan cloud resmi dari Catbox yang ramah server cloud)
+# Fungsi untuk mengunggah file ke Litterbox secara anonim
 def upload_to_catbox(file_path):
-    url = "https://litterbox.catbox.moe/api.php"
+    url = "https://litterbox.moe/api.php"
     try:
         with open(file_path, "rb") as f:
             files = {"fileToUpload": f}
             data = {
                 "reqtype": "fileupload",
-                "time": "24h"  # File disimpan otomatis selama 24 jam
+                "time": "24h"  # File disimpan selama 24 jam
             }
             response = requests.post(url, data=data, files=files, timeout=60)
             print(f"[LITTERBOX] Status: {response.status_code}")
             print(f"[LITTERBOX] Response: {response.text}")
             
-            if response.status_code == 200 and "litterbox.catbox.moe" in response.text:
+            # Validasi respon sukses dari Litterbox.moe
+            if response.status_code == 200 and "litterbox.moe" in response.text:
                 return response.text.strip()
     except Exception as e:
         print(f"[LITTERBOX] Gagal upload: {e}")
