@@ -24,24 +24,21 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file besar ke Catbox.moe secara anonim
+# Fungsi untuk mengunggah file ke Catbox.moe secara anonim
 def upload_to_catbox(file_path):
     url = "https://catbox.moe/api.php"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
     try:
         with open(file_path, "rb") as f:
             files = {"fileToUpload": f}
             data = {"reqtype": "fileupload"}
-            response = requests.post(url, data=data, files=files, headers=headers, timeout=60)
-            print(f"Catbox Response Status: {response.status_code}")
-            print(f"Catbox Response Text: {response.text}")
+            response = requests.post(url, data=data, files=files, timeout=60)
+            print(f"Catbox Status: {response.status_code}")
+            print(f"Catbox Response: {response.text}")
             
-            if response.status_code == 200:
+            if response.status_code == 200 and "catbox.moe" in response.text:
                 return response.text.strip()
     except Exception as e:
-        print(f"Gagal upload ke cloud: {e}")
+        print(f"Gagal upload ke Catbox: {e}")
     return None
 
 @bot.event
@@ -119,7 +116,7 @@ async def on_message(message):
                         file = discord.File(downloaded_file, filename="video.mp4")
                         await message.reply(embed=embed, file=file)
 
-                    # SKENARIO 2: Jika file > 8MB hingga 50MB, upload ke Cloud Catbox
+                    # SKENARIO 2: Jika file > 8MB hingga 50MB, Wajib Upload ke Cloud Catbox (Mencegah Error 413)
                     else:
                         print("Ukuran > 8MB. Mengunggah ke Catbox.moe...")
                         file_url = upload_to_catbox(downloaded_file)
