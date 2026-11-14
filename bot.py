@@ -49,7 +49,7 @@ async def on_message(message):
                     "noplaylist": True,
                     "quiet": True,
                     # Bypass proteksi YouTube di server cloud tanpa browser lokal
-                    "format": "best[filesize<25M]/best[height<=720]/best",
+                    "format": "best[height<=480][ext=mp4]/best[height<=480]/best",
                     "extractor_args": {
                         "youtube": {
                             "player_client": ["android", "web"]
@@ -77,7 +77,7 @@ async def on_message(message):
                 # Cek apakah file berhasil diunduh dan ada di direktori
                 if downloaded_file and os.path.exists(downloaded_file):
                     file_size = os.path.getsize(downloaded_file)
-                    if file_size > 50 * 1024 * 1024:
+                    if file_size > 24 * 1024 * 1024:
                         os.remove(downloaded_file)
                         await message.reply(
                             "❌ Video terlalu besar untuk diunggah ke Discord (>50MB)."
