@@ -31,7 +31,11 @@ def upload_to_catbox(file_path):
         with open(file_path, "rb") as f:
             files = {"fileToUpload": f}
             data = {"reqtype": "fileupload"}
-            response = requests.post(url, data=data, files=files, timeout=60)
+            # Tambahkan User-Agent browser agar tidak diblokir oleh Catbox
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            response = requests.post(url, data=data, files=files, headers=headers, timeout=60)
             print(f"[CATBOX] Status: {response.status_code}")
             print(f"[CATBOX] Response: {response.text}")
             
