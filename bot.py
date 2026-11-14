@@ -24,14 +24,20 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file besar ke Catbox.moe (Hosting file gratis & instan)
+# Fungsi untuk mengunggah file besar ke Catbox.moe dengan Header User-Agent
 def upload_to_catbox(file_path):
     url = "https://catbox.moe/user/api.php"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
     try:
         with open(file_path, "rb") as f:
             files = {"fileToUpload": f}
             data = {"reqtype": "upload-file"}
-            response = requests.post(url, data=data, files=files, timeout=60)
+            response = requests.post(url, data=data, files=files, headers=headers, timeout=60)
+            print(f"Catbox Response Status: {response.status_code}")
+            print(f"Catbox Response Text: {response.text}")
+            
             if response.status_code == 200:
                 return response.text.strip()
     except Exception as e:
