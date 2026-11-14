@@ -24,21 +24,24 @@ MULTI_PLATFORM_REGEX = re.compile(
     r"))"
 )
 
-# Fungsi untuk mengunggah file ke Litterbox secara anonim
+# Fungsi untuk mengunggah file ke Litterbox dengan header browser
 def upload_to_catbox(file_path):
     url = "https://litterbox.moe/api.php"
     try:
+        filename = os.path.basename(file_path)
         with open(file_path, "rb") as f:
-            files = {"fileToUpload": f}
+            files = {"fileToUpload": (filename, f, "video/mp4")}
             data = {
                 "reqtype": "fileupload",
                 "time": "24h"  # File disimpan selama 24 jam
             }
-            response = requests.post(url, data=data, files=files, timeout=60)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+            response = requests.post(url, data=data, files=files, headers=headers, timeout=60)
             print(f"[LITTERBOX] Status: {response.status_code}")
             print(f"[LITTERBOX] Response: {response.text}")
             
-            # Validasi respon sukses dari Litterbox.moe
             if response.status_code == 200 and "litterbox.moe" in response.text:
                 return response.text.strip()
     except Exception as e:
