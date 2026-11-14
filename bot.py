@@ -113,20 +113,20 @@ async def on_message(message):
                         icon_url=message.author.display_avatar.url,
                     )
 
-                    # SKENARIO 1: Jika file <= 24MB, kirim langsung sebagai file Discord
-                    if file_size <= 24 * 1024 * 1024:
-                        print("Ukuran <= 24MB. Mengirim langsung ke Discord...")
+                    # SKENARIO 1: Jika file <= 8MB, kirim langsung sebagai file Discord
+                    if file_size <= 8 * 1024 * 1024:
+                        print("Ukuran <= 8MB. Mengirim langsung ke Discord...")
                         file = discord.File(downloaded_file, filename="video.mp4")
                         await message.reply(embed=embed, file=file)
 
-                    # SKENARIO 2: Jika file > 24MB hingga 50MB, upload ke Cloud Catbox
+                    # SKENARIO 2: Jika file > 8MB hingga 50MB, upload ke Cloud Catbox
                     else:
-                        print("Ukuran > 24MB. Mengunggah ke Catbox.moe...")
+                        print("Ukuran > 8MB. Mengunggah ke Catbox.moe...")
                         file_url = upload_to_catbox(downloaded_file)
                         if file_url:
                             print(f"Berhasil upload! URL: {file_url}")
                             embed.add_field(
-                                name="📦 Video Berukuran Besar (>25MB)",
+                                name="📦 Video Berukuran Besar (>8MB)",
                                 value=f"[Klik di sini untuk menonton / mengunduh video]({file_url})",
                                 inline=False
                             )
