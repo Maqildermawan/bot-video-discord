@@ -48,10 +48,8 @@ async def on_message(message):
             "outtmpl": f"media_{message.id}.%(ext)s",
             "noplaylist": True,
             "quiet": True,
-            # Batasi ukuran maksimal file yang didownload agar aman untuk Discord (25MB)
-            "max_filesize": 25 * 1024 * 1024,
-            "format": "best[ext=mp4]/best[height<=480]/best",
-            # Bypass proteksi YouTube di server cloud tanpa browser lokal
+            # Batasi resolusi maksimal 480p/720p agar ukuran file aman di bawah limit Discord (25MB)
+            "format": "best[height<=480][ext=mp4]/best[height<=480]/best",
             "extractor_args": {
                 "youtube": {
                     "player_client": ["android", "web"]
