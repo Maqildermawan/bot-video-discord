@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik dengan cookies dan js_interpreter node untuk bypass n-challenge"""
+    """Mengunduh video menggunakan client ios agar lolos n-challenge dengan cookies"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,7 +59,11 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'js_interpreter': 'node',  # Memaksa yt-dlp menggunakan Node.js untuk menyelesaikan n-challenge
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios']
+            }
+        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
