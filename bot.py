@@ -45,8 +45,8 @@ def download_media(url, unique_id):
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        # Prioritaskan format mp4 tunggal berukuran ringan agar langsung bisa diputar di Discord tanpa ffmpeg
-        'format': 'best[ext=mp4][filesize<24M]/best[ext=mp4]/best',
+        # Hapus syarat [ext=mp4] yang ketat agar YouTube tidak menolak format
+        'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
@@ -56,7 +56,6 @@ def download_media(url, unique_id):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         filename = ydl.prepare_filename(info)
-        # Pastikan ekstensi file sesuai dengan file aktual yang tersimpan
         if not os.path.exists(filename):
             base = os.path.splitext(filename)[0]
             for ext in ['mp4', 'mkv', 'webm', 'mov']:
@@ -88,7 +87,6 @@ async def on_message(message):
 
     file_path = None
     try:
-        # Jalankan proses unduh di thread terpisah agar bot tidak freeze
         loop = asyncio.get_running_loop()
         info, file_path = await loop.run_in_executor(None, download_media, url, message.id)
 
@@ -96,17 +94,14 @@ async def on_message(message):
         uploader = info.get('uploader') or info.get('channel') or 'Creator'
         description = info.get('description') or ''
         
-        # Batasi panjang deskripsi agar rapi seperti pada gambar
         if len(description) > 350:
             description = description[:347] + "..."
 
-        # Buat Embed deskripsi di bawah video
         embed = discord.Embed(
             description=f"**@{uploader}**\n{description}" if description else f"**@{uploader}**",
             color=discord.Color.from_rgb(43, 45, 49)
         )
 
-        # Cek ukuran file (Batas server Discord tanpa boost adalah 10MB - 25MB)
         file_size = os.path.getsize(file_path)
         max_discord_size = 24 * 1024 * 1024  # 24 MB
 
@@ -122,7 +117,6 @@ async def on_message(message):
             await status_msg.delete()
             await message.reply(content=f"{cloud_url}", embed=embed)
 
-        # Sembunyikan embed link asli dari pesan pengirim agar chat tetap bersih
         try:
             await message.edit(suppress=True)
         except Exception:
@@ -136,7 +130,6 @@ async def on_message(message):
         await send_log(message.guild, message.author, "Error Download", f"URL: {url}\nError: `{e}`")
 
     finally:
-        # Hapus file sementara dari server Railway agar penyimpanan tidak penuh
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
