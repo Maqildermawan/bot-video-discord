@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik dengan js_interpreter node untuk bypass n-challenge"""
+    """Mengunduh video fisik menggunakan client android/ios tanpa cookies untuk bypass n-challenge"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,8 +59,14 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'js_interpreter': 'node', # Memaksa yt-dlp menggunakan Node.js untuk memecahkan n-challenge
-        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
+        # Menggunakan client android/ios agar terhindar total dari n-challenge web
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios']
+            }
+        },
+        # Cookie dinonaktifkan agar yt-dlp bebas memakai client mobile tanpa error
+        'cookiefile': None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -69,7 +75,7 @@ def download_media(url, unique_id):
         if not os.path.exists(filename):
             base = os.path.splitext(filename)[0]
             for ext in ['mp4', 'mkv', 'webm', 'mov']:
-                if os.path.exists(f"{base}.{ext}"):
+                if os.path.exists(f"{base}.{ext} "):
                     filename = f"{base}.{ext}"
                     break
         return info, filename
