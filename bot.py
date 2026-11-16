@@ -52,21 +52,14 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik dengan konfigurasi anti-error format YouTube"""
+    """Mengunduh video fisik murni menggunakan cookies.txt tanpa client restrictions"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        # Fallback format super fleksibel agar tidak gagal saat YouTube membatasi stream
-        'format': 'b[filesize<24M]/b/bv*+ba/b',
+        'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Gunakan client alternatif yang tidak wajib memakai JS runtime
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['ios', 'tv_embedded', 'mediaconnect']
-            }
-        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
