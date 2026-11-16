@@ -51,11 +51,11 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik dengan konfigurasi standar yt-dlp yang stabil"""
+    """Mengunduh video fisik menggunakan format best untuk bypass n-challenge"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        'format': 'b[filesize<24M]/b/bv*+ba/b',
+        'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
