@@ -1,6 +1,7 @@
 import os
 import re
 import asyncio
+import shutil
 import discord
 import yt_dlp
 import requests
@@ -51,15 +52,19 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan cookies dan js_interpreter node"""
+    """Mengunduh video fisik menggunakan path absolut nodejs untuk bypass n-challenge"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
+    # Deteksi path absolut Node.js secara otomatis di server Railway
+    node_path = shutil.which('node')
+
     ydl_opts = {
         'format': 'b[filesize<24M]/b/bv*+ba/b',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'js_interpreter': 'node',  # Memakai Node.js dari package.json untuk memecahkan n-challenge
+        # Menggunakan path absolut Node.js agar yt-dlp dapat memecahkan n-challenge
+        'js_interpreter': node_path if node_path else 'node',
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
