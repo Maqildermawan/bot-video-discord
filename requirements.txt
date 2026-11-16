@@ -15,6 +15,4 @@ typing_extensions==4.16.0
 yarl==1.25.1
 yt-dlp>=2024.10.22
 requests
-discord.py
-yt-dlp
 audioop-lts
