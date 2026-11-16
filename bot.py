@@ -1,7 +1,6 @@
 import os
 import re
 import asyncio
-import shutil
 import discord
 import yt_dlp
 import requests
@@ -52,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan player_client mweb agar mendukung cookies tanpa n-challenge desktop"""
+    """Mengunduh video fisik menggunakan yt-dlp standar dengan dukungan penuh Node.js & FFmpeg"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -60,12 +59,6 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client mweb (Mobile Web) yang mendukung cookies & bebas n-challenge desktop
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['mweb']
-            }
-        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
@@ -124,12 +117,10 @@ async def on_message(message):
 
         if file_size <= max_discord_size:
             await status_msg.delete()
-            # Kirim ke channel pengguna
             await message.reply(
                 file=discord.File(file_path, filename=safe_title),
                 embed=embed
             )
-            # Kirim juga videonya ke channel logs
             await send_log(
                 message.guild, message.author, "Download Video",
                 f"Judul: {title}\nURL: {url}",
@@ -139,9 +130,7 @@ async def on_message(message):
             await status_msg.edit(content="📦 Ukuran video melebihi batas Discord, mengunggah ke cloud...")
             cloud_url = await loop.run_in_executor(None, upload_to_uguu, file_path)
             await status_msg.delete()
-            # Kirim ke channel pengguna
             await message.reply(content=f"{cloud_url}", embed=embed)
-            # Kirim juga link videonya ke channel logs
             await send_log(
                 message.guild, message.author, "Download Video (Cloud)",
                 f"Judul: {title}\nURL: {url}",
@@ -160,7 +149,6 @@ async def on_message(message):
         await send_log(message.guild, message.author, "Error Download", f"URL: {url}\nError: `{error_msg}`")
 
     finally:
-        # Hapus file sementara setelah selesai dikirim ke user maupun ke channel logs
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
