@@ -149,9 +149,10 @@ async def on_message(message):
             pass
 
     except Exception as e:
+        error_msg = f"{type(e).__name__}: {e}"
         await status_msg.edit(content="❌ Gagal mengunduh video. Pastikan link publik atau format didukung.")
-        print(f"[ERROR] {e}")
-        await send_log(message.guild, message.author, "Error Download", f"URL: {url}\nError: `{e}`")
+        print(f"[ERROR DETAIL] {error_msg}")
+        await send_log(message.guild, message.author, "Error Download", f"URL: {url}\nError: `{error_msg}`")
 
     finally:
         # Hapus file sementara setelah selesai dikirim ke user maupun ke channel logs
