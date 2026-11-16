@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan player_client TV untuk bypass n-challenge YouTube"""
+    """Mengunduh video fisik menggunakan impersonate chrome dan cookies untuk bypass error 429"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,12 +59,9 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client TV YouTube untuk menghindari n-challenge dan PO Token
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['tv']
-            }
-        },
+        # Meniru TLS fingerprint browser Chrome asli untuk melewati blokir IP cloud & error 429
+        'impersonate': 'chrome',
+        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
