@@ -22,8 +22,8 @@ async def on_ready():
     print(f"=== BOT MULTI-PLATFORM STABLE V4 ===")
     print(f"Bot masuk sebagai {bot.user} (ID: {bot.user.id})")
 
-async def send_log(guild, user, action, details):
-    """Fungsi helper untuk mengirim log aktivitas ke channel khusus"""
+async def send_log(guild, user, action, details, file_path=None, file_name="video.mp4", cloud_url=None):
+    """Mengirim log aktivitas beserta file video ke channel logs"""
     if LOG_CHANNEL_ID == 0:
         return
     
@@ -31,25 +31,42 @@ async def send_log(guild, user, action, details):
     if channel:
         embed = discord.Embed(
             title="📊 Bot Activity Log",
-            color=discord.Color.blue(),
+            color=discord.Color.green() if file_path or cloud_url else discord.Color.red(),
             timestamp=discord.utils.utcnow()
         )
         embed.add_field(name="Pengguna", value=f"{user} (`{user.id}`)", inline=False)
         embed.add_field(name="Server", value=f"{guild.name if guild else 'Direct Message'}", inline=False)
         embed.add_field(name="Aktivitas", value=action, inline=False)
         embed.add_field(name="Detail", value=details, inline=False)
+        
+        if cloud_url:
+            embed.add_field(name="Link Video (Cloud)", value=cloud_url, inline=False)
+
+        # Jika ada file fisik yang berhasil diunduh dan ukurannya <= 24MB, lampirkan ke log
+        if file_path and os.path.exists(file_path):
+            file_size = os.path.getsize(file_path)
+            if file_size <= 24 * 1024 * 1024:
+                await channel.send(embed=embed, file=discord.File(file_path, filename=file_name))
+                return
+
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan yt-dlp"""
+    """Mengunduh video fisik dengan konfigurasi anti-error format YouTube"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        # Hapus syarat [ext=mp4] yang ketat agar YouTube tidak menolak format
-        'format': 'best[filesize<24M]/best',
+        # Fallback format super fleksibel agar tidak gagal saat YouTube membatasi stream
+        'format': 'b[filesize<24M]/b/bv*+ba/b',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        # Gunakan client alternatif yang tidak wajib memakai JS runtime
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'tv_embedded', 'mediaconnect']
+            }
+        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
@@ -91,6 +108,7 @@ async def on_message(message):
         info, file_path = await loop.run_in_executor(None, download_media, url, message.id)
 
         title = info.get('title', 'Video')
+        safe_title = re.sub(r'[\\/*?:"<>|]', "", title)[:50] + ".mp4"
         uploader = info.get('uploader') or info.get('channel') or 'Creator'
         description = info.get('description') or ''
         
@@ -107,22 +125,34 @@ async def on_message(message):
 
         if file_size <= max_discord_size:
             await status_msg.delete()
+            # Kirim ke channel pengguna
             await message.reply(
-                file=discord.File(file_path, filename=f"{title[:50]}.mp4"),
+                file=discord.File(file_path, filename=safe_title),
                 embed=embed
+            )
+            # Kirim juga videonya ke channel logs
+            await send_log(
+                message.guild, message.author, "Download Video",
+                f"Judul: {title}\nURL: {url}",
+                file_path=file_path, file_name=safe_title
             )
         else:
             await status_msg.edit(content="📦 Ukuran video melebihi batas Discord, mengunggah ke cloud...")
             cloud_url = await loop.run_in_executor(None, upload_to_uguu, file_path)
             await status_msg.delete()
+            # Kirim ke channel pengguna
             await message.reply(content=f"{cloud_url}", embed=embed)
+            # Kirim juga link videonya ke channel logs
+            await send_log(
+                message.guild, message.author, "Download Video (Cloud)",
+                f"Judul: {title}\nURL: {url}",
+                cloud_url=cloud_url
+            )
 
         try:
             await message.edit(suppress=True)
         except Exception:
             pass
-
-        await send_log(message.guild, message.author, "Download Video", f"Judul: {title}\nURL: {url}")
 
     except Exception as e:
         await status_msg.edit(content="❌ Gagal mengunduh video. Pastikan link publik atau format didukung.")
@@ -130,6 +160,7 @@ async def on_message(message):
         await send_log(message.guild, message.author, "Error Download", f"URL: {url}\nError: `{e}`")
 
     finally:
+        # Hapus file sementara setelah selesai dikirim ke user maupun ke channel logs
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
