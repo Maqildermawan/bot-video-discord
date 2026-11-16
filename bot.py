@@ -52,19 +52,20 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan path absolut nodejs untuk bypass n-challenge"""
+    """Mengunduh video fisik menggunakan player_client mweb agar mendukung cookies tanpa n-challenge desktop"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Deteksi path absolut Node.js secara otomatis di server Railway
-    node_path = shutil.which('node')
-
     ydl_opts = {
         'format': 'b[filesize<24M]/b/bv*+ba/b',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan path absolut Node.js agar yt-dlp dapat memecahkan n-challenge
-        'js_interpreter': node_path if node_path else 'node',
+        # Menggunakan client mweb (Mobile Web) yang mendukung cookies & bebas n-challenge desktop
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['mweb']
+            }
+        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
