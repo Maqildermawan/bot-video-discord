@@ -4,25 +4,23 @@ from discord.ext import commands
 import yt_dlp
 
 # Konfigurasi Bot
-TOKEN = os.getenv("DISCORD_TOKEN")  # Token bot dari environment variable atau masukkan langsung
-LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", 0))  # ID Channel Discord untuk log aktivitas (ubah atau isi di Railway)
+TOKEN = os.getenv("DISCORD_TOKEN")  
+LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", 0))  
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Konfigurasi yt-dlp yang diperbarui untuk mengatasi error bot YouTube & mendukung cookies.txt
+# Konfigurasi yt-dlp yang dioptimalkan untuk stabilitas server cloud
 YDL_OPTIONS = {
-    'format': 'best',
+    'format': 'best[ext=mp4]/best',  # Menggunakan format tunggal yang stabil agar tidak butuh ffmpeg tambahan
     'noplaylist': True,
     'extract_flat': False,
-    # Menggunakan client Android/Web untuk menghindari pembatasan SABR / deteksi bot
     'extractor_args': {
         'youtube': {
             'player-client': ['android', 'web']
         }
     },
-    # Jika Anda memiliki file cookies.txt untuk autentikasi akun YouTube, letakkan di folder yang sama
     'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
 }
 
@@ -51,21 +49,19 @@ async def send_log(guild, user, action, details):
 
 @bot.command(name="dl", help="Mengunduh video dari YouTube/platform lain")
 async def download_video(ctx, url: str):
-    # Kirim respon awal bahwa proses sedang berjalan
     msg = await ctx.send("⏳ Sedang memproses video, mohon tunggu...")
     
     try:
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(url, download=False)
             video_title = info.get('title', 'Video')
-            video_url = info.get('url', url)
             
         await msg.edit(content=f"✅ Berhasil memproses: **{video_title}**\n🔗 {url}")
         
-        # Kirim log aktivitas ke Log Channel
+        # Kirim log aktivitas sukses ke Log Channel
         await send_log(ctx.guild, ctx.author, "Download Video", f"Judul: {video_title}\nURL: {url}")
         
-    py-except Exception as e:
+    except Exception as e:
         await msg.edit(content=f"❌ Terjadi kesalahan saat memproses video.")
         print(f"[ERROR] Terjadi kesalahan: {e}")
         
