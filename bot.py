@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan player_client tv & mweb agar stabil di Railpack"""
+    """Mengunduh video menggunakan client android tanpa cookies untuk bypass n-challenge & PO Token"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,12 +59,14 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        # Menggunakan client android agar terbebas dari n-challenge web dan GVS PO Token mweb
         'extractor_args': {
             'youtube': {
-                'player_client': ['tv', 'mweb']
+                'player_client': ['android']
             }
         },
-        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
+        # Menonaktifkan cookies agar yt-dlp tidak terdorong memakai web client
+        'cookiefile': None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
