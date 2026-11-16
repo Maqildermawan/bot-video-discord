@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan player_client android/mweb untuk bypass n-challenge"""
+    """Mengunduh video fisik menggunakan player_client TV untuk bypass n-challenge YouTube"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,16 +59,12 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan klien android dan mweb agar terhindar dari n-challenge web
+        # Menggunakan client TV YouTube untuk menghindari n-challenge dan PO Token
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'mweb']
+                'player_client': ['tv']
             }
         },
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
