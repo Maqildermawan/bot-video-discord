@@ -4,8 +4,8 @@ from discord.ext import commands
 import yt_dlp
 
 # Konfigurasi Bot
-TOKEN = os.getenv("DISCORD_TOKEN")  
-LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", 0))  
+TOKEN = os.getenv("DISCORD_TOKEN")  # Token bot dari environment variable
+LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", 0))  # ID Channel Discord untuk log aktivitas
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Konfigurasi yt-dlp yang dioptimalkan untuk stabilitas server cloud
 YDL_OPTIONS = {
-    'format': 'best[ext=mp4]/best',  # Menggunakan format tunggal yang stabil agar tidak butuh ffmpeg tambahan
+    'format': 'best[ext=mp4]/best',
     'noplaylist': True,
     'extract_flat': False,
     'extractor_args': {
