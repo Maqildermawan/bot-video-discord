@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan yt-dlp standar dengan dukungan penuh Node.js & FFmpeg"""
+    """Mengunduh video fisik menggunakan player_client tv & mweb agar stabil di Railpack"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,6 +59,11 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['tv', 'mweb']
+            }
+        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
