@@ -5,7 +5,6 @@ import discord
 import yt_dlp
 import requests
 
-# Konfigurasi Bot
 TOKEN = os.getenv("DISCORD_TOKEN")
 LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", 0))
 
@@ -13,7 +12,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(intents=intents)
 
-# Folder sementara untuk menyimpan video yang diunduh
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -23,7 +21,6 @@ async def on_ready():
     print(f"Bot masuk sebagai {bot.user} (ID: {bot.user.id})")
 
 async def send_log(guild, user, action, details, file_path=None, file_name="video.mp4", cloud_url=None):
-    """Mengirim log aktivitas beserta file video ke channel logs"""
     if LOG_CHANNEL_ID == 0:
         return
     
@@ -42,7 +39,6 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         if cloud_url:
             embed.add_field(name="Link Video (Cloud)", value=cloud_url, inline=False)
 
-        # Jika ada file fisik yang berhasil diunduh dan ukurannya <= 24MB, lampirkan ke log
         if file_path and os.path.exists(file_path):
             file_size = os.path.getsize(file_path)
             if file_size <= 24 * 1024 * 1024:
@@ -52,11 +48,10 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik murni menggunakan cookies.txt tanpa client restrictions"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        'format': 'best[filesize<24M]/best',
+        'format': 'b[filesize<24M]/b/bv*+ba/b',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
@@ -75,7 +70,6 @@ def download_media(url, unique_id):
         return info, filename
 
 def upload_to_uguu(file_path):
-    """Fallback upload ke cloud (uguu.se) jika ukuran file melebihi batas Discord"""
     with open(file_path, 'rb') as f:
         response = requests.post('https://uguu.se/upload', files={'files[]': f}, timeout=60)
     data = response.json()
@@ -118,12 +112,10 @@ async def on_message(message):
 
         if file_size <= max_discord_size:
             await status_msg.delete()
-            # Kirim ke channel pengguna
             await message.reply(
                 file=discord.File(file_path, filename=safe_title),
                 embed=embed
             )
-            # Kirim juga videonya ke channel logs
             await send_log(
                 message.guild, message.author, "Download Video",
                 f"Judul: {title}\nURL: {url}",
@@ -133,9 +125,7 @@ async def on_message(message):
             await status_msg.edit(content="📦 Ukuran video melebihi batas Discord, mengunggah ke cloud...")
             cloud_url = await loop.run_in_executor(None, upload_to_uguu, file_path)
             await status_msg.delete()
-            # Kirim ke channel pengguna
             await message.reply(content=f"{cloud_url}", embed=embed)
-            # Kirim juga link videonya ke channel logs
             await send_log(
                 message.guild, message.author, "Download Video (Cloud)",
                 f"Judul: {title}\nURL: {url}",
@@ -153,7 +143,6 @@ async def on_message(message):
         await send_log(message.guild, message.author, "Error Download", f"URL: {url}\nError: `{e}`")
 
     finally:
-        # Hapus file sementara setelah selesai dikirim ke user maupun ke channel logs
         if file_path and os.path.exists(file_path):
             try:
                 os.remove(file_path)
