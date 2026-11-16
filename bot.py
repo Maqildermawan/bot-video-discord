@@ -51,21 +51,20 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan player_client ios tanpa cookies untuk bypass semua blokir YouTube"""
+    """Mengunduh video menggunakan player_client ios dengan format fleksibel agar selalu berhasil"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        'format': 'b[filesize<24M]/b/bv*+ba/b',
+        'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client iOS murni yang bebas dari n-challenge, PO token, dan blokir bot datacenter
+        # Menggunakan client iOS murni yang stabil
         'extractor_args': {
             'youtube': {
                 'player_client': ['ios']
             }
         },
-        # Menonaktifkan cookies agar klien ios berjalan mulus tanpa error
         'cookiefile': None,
     }
 
@@ -75,7 +74,7 @@ def download_media(url, unique_id):
         if not os.path.exists(filename):
             base = os.path.splitext(filename)[0]
             for ext in ['mp4', 'mkv', 'webm', 'mov']:
-                if os.path.exists(f"{base}.{ext}"):
+                if os.path.exists(f"{base}.{ext} "):
                     filename = f"{base}.{ext}"
                     break
         return info, filename
