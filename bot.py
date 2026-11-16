@@ -5,6 +5,7 @@ import discord
 import yt_dlp
 import requests
 
+# Konfigurasi Bot
 TOKEN = os.getenv("DISCORD_TOKEN")
 LOG_CHANNEL_ID = int(os.getenv("LOG_CHANNEL_ID", 0))
 
@@ -12,6 +13,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Client(intents=intents)
 
+# Folder sementara untuk menyimpan video yang diunduh
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -21,6 +23,7 @@ async def on_ready():
     print(f"Bot masuk sebagai {bot.user} (ID: {bot.user.id})")
 
 async def send_log(guild, user, action, details, file_path=None, file_name="video.mp4", cloud_url=None):
+    """Mengirim log aktivitas beserta file video ke channel logs"""
     if LOG_CHANNEL_ID == 0:
         return
     
@@ -48,6 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
+    """Mengunduh video fisik dengan header browser asli untuk bypass 429"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -55,6 +59,13 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        # Menyamar sebagai browser Chrome Windows agar terhindar dari Too Many Requests (429)
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-us,en;q=0.5',
+            'Sec-Fetch-Mode': 'navigate',
+        },
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
@@ -70,6 +81,7 @@ def download_media(url, unique_id):
         return info, filename
 
 def upload_to_uguu(file_path):
+    """Fallback upload ke cloud (uguu.se) jika ukuran file melebihi batas Discord"""
     with open(file_path, 'rb') as f:
         response = requests.post('https://uguu.se/upload', files={'files[]': f}, timeout=60)
     data = response.json()
