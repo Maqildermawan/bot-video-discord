@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video fisik menggunakan impersonate chrome dan cookies untuk bypass error 429"""
+    """Mengunduh video fisik dengan konfigurasi standar yt-dlp yang stabil"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,8 +59,6 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Meniru TLS fingerprint browser Chrome asli untuk melewati blokir IP cloud & error 429
-        'impersonate': 'chrome',
         'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
