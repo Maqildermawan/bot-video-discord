@@ -44,7 +44,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 
         if file_path and os.path.exists(file_path):
             file_size = os.path.getsize(file_path)
-            if file_size <= 24 * 1024 * 1024:
+            if file_size <= 50 * 1024 * 1024:
                 await channel.send(embed=embed, file=discord.File(file_path, filename=file_name))
                 return
 
@@ -120,7 +120,7 @@ async def on_message(message):
         )
 
         file_size = os.path.getsize(file_path)
-        max_discord_size = 24 * 1024 * 1024  # 24 MB
+        max_discord_size = 50 * 1024 * 1024  # 24 MB
 
         if file_size <= max_discord_size:
             await status_msg.delete()
