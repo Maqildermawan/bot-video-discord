@@ -13,6 +13,7 @@ propcache==0.5.4
 pycparser==3.12
 typing_extensions==4.16.0
 yarl==1.25.1
+pytubefix
 discord.py
 yt-dlp
 requests
