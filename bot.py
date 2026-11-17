@@ -50,22 +50,67 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 
         await channel.send(embed=embed)
 
+import requests
+import re
+
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan yt-dlp dengan konfigurasi web client yang dioptimalkan untuk cloud"""
+    """Mengunduh video YouTube melalui Piped API publik untuk bypass total blokir IP cloud"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
+    # Jika URL adalah YouTube, gunakan Piped API publik
+    if any(domain in url for domain in ["youtube.com", "youtu.be"]):
+        try:
+            video_id = None
+            if "youtu.be/" in url:
+                video_id = url.split("youtu.be/")[1].split("?")[0]
+            elif "v=" in url:
+                video_id = re.findall(r"v=([a-zA-Z0-9_-]+)", url)
+                if video_id:
+                    video_id = video_id[0]
+            
+            if video_id:
+                piped_instances = [
+                    "https://pipedapi.kavin.rocks",
+                    "https://piped-api.garudalinux.org",
+                    "https://api.piped.privacy.com.de"
+                ]
+                
+                media_url = None
+                for instance in piped_instances:
+                    try:
+                        res = requests.get(f"{instance}/streams/{video_id}", timeout=10)
+                        if res.status_code == 200:
+                            data = res.json()
+                            streams = data.get("videoStreams", [])
+                            # Cari stream mp4 dengan kualitas yang tersedia
+                            for s in streams:
+                                if s.get("format") == "mp4" and s.get("url"):
+                                    media_url = s.get("url")
+                                    break
+                            if media_url:
+                                break
+                    except Exception:
+                        continue
+                
+                if media_url:
+                    file_resp = requests.get(media_url, stream=True, timeout=60)
+                    filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.mp4")
+                    with open(filename, "wb") as f:
+                        for chunk in file_resp.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                    
+                    info = {"title": "YouTube Video", "extractor": "youtube"}
+                    return info, filename
+        except Exception as e:
+            print(f"[INFO] Piped API gagal, mencoba fallback: {e}")
+
+    # Fallback ke yt-dlp standar untuk platform lain (TikTok, Instagram, dll.)
     ydl_opts = {
         'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['web']
-            }
-        },
-        'geo_bypass': True,
-        'nocheckcertificate': True,
         'cookiefile': None,
     }
 
