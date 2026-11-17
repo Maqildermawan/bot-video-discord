@@ -51,25 +51,23 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan player_client web dengan User-Agent browser untuk bypass proteksi datacenter"""
+    """Mengunduh video menggunakan player_client tv dan cookies.txt agar lolos blokir datacenter tanpa Node.js"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
+    has_cookies = os.path.exists('cookies.txt')
+    print(f"[INFO] Status cookies.txt ditemukan: {has_cookies}")
+
     ydl_opts = {
         'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client web standar
         'extractor_args': {
             'youtube': {
-                'player_client': ['web']
+                'player_client': ['tv']
             }
         },
-        # Menyamarkan User-Agent agar terbaca sebagai browser Chrome di Windows
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        'cookiefile': None,
+        'cookiefile': 'cookies.txt' if has_cookies else None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
