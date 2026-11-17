@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan player_client web murni tanpa cookies untuk menghindari error format"""
+    """Mengunduh video menggunakan player_client mweb dengan cookies.txt agar lolos verifikasi bot"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,14 +59,14 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client web murni
+        # Menggunakan client mweb karena mendukung cookies.txt untuk autentikasi akun
         'extractor_args': {
             'youtube': {
-                'player_client': ['web']
+                'player_client': ['mweb']
             }
         },
-        # Pastikan cookies dinonaktifkan agar client web berjalan mulus tanpa bentrok
-        'cookiefile': None,
+        # Mengaktifkan kembali cookies.txt untuk melewati halaman "Confirm you're not a bot"
+        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
