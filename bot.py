@@ -53,55 +53,19 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 import requests
 
 def download_media(url, unique_id):
-    """Menggunakan Cobalt API publik untuk YouTube agar aman dari blokir IP datacenter Railway, dan yt-dlp untuk platform lain"""
+    """Mengunduh video menggunakan yt-dlp dengan client android/mweb yang dioptimalkan untuk server cloud"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Jika tautan adalah YouTube, gunakan Cobalt API publik yang bebas blokir IP cloud
-    if any(domain in url for domain in ["youtube.com", "youtu.be"]):
-        try:
-            api_url = "https://co.wuk.sh/api/json"
-            headers = {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "url": url,
-                "vQuality": "720",
-                "filenamePattern": "basic"
-            }
-            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
-            res_data = response.json()
-            
-            if res_data.get("status") == "stream" or res_data.get("status") == "redirect":
-                media_url = res_data.get("url")
-                file_resp = requests.get(media_url, stream=True, timeout=60)
-                
-                # Deteksi ekstensi file
-                ext = "mp4"
-                content_type = file_resp.headers.get("content-type", "")
-                if "webm" in content_type:
-                    ext = "webm"
-                elif "mkv" in content_type:
-                    ext = "mkv"
-                    
-                filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.{ext}")
-                with open(filename, "wb") as f:
-                    for chunk in file_resp.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                            
-                # Mock info dict untuk kompatibilitas fungsi bot Anda
-                info = {"title": res_data.get("filename", "YouTube Video"), "extractor": "youtube"}
-                return info, filename
-        except Exception as e:
-            print(f"[INFO] Cobalt API fallback gagal, mencoba yt-dlp standar: {e}")
-
-    # Fallback ke yt-dlp standar untuk platform lain atau jika API di atas ada kendala
     ydl_opts = {
         'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'mweb']
+            }
+        },
         'cookiefile': None,
     }
 
