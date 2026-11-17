@@ -50,21 +50,36 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 
         await channel.send(embed=embed)
 
+from pytubefix import YouTube
+import os
+
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan yt-dlp dengan client android murni tanpa JS runtime"""
+    """Mengunduh video menggunakan pytubefix untuk YouTube dan yt-dlp untuk platform lain"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Jika URL YouTube, gunakan player_client android yang stabil di cloud
+    # Jika tautan adalah YouTube, gunakan pytubefix yang tahan terhadap blokir IP datacenter
+    if any(domain in url for domain in ["youtube.com", "youtu.be"]):
+        try:
+            yt = YouTube(url)
+            # Ambil stream dengan resolusi tertinggi yang ukurannya di bawah 24MB
+            stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+            if not stream:
+                stream = yt.streams.filter(file_extension='mp4').first()
+                
+            filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.mp4")
+            stream.download(output_path=DOWNLOAD_DIR, filename=f"{unique_id}.mp4")
+            
+            info = {"title": yt.title, "extractor": "youtube"}
+            return info, filename
+        except Exception as e:
+            print(f"[INFO] Pytubefix gagal, mencoba metode cadangan: {e}")
+
+    # Fallback ke yt-dlp standar untuk platform lain (TikTok, IG, dll.)
     ydl_opts = {
-        'format': 'b / bv+ba/b',
+        'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['android']
-            }
-        },
         'cookiefile': None,
     }
 
