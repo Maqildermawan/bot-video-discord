@@ -51,65 +51,47 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 import requests
-import re
 
 def download_media(url, unique_id):
-    """Mengunduh video YouTube melalui Invidious API publik untuk bypass total blokir IP datacenter"""
+    """Mengunduh video YouTube melalui Cobalt API publik versi stabil"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Jika URL adalah YouTube, ekstrak Video ID dan ambil via Invidious API
+    # Jika URL adalah YouTube, gunakan Cobalt API publik yang aman dari blokir format yt-dlp
     if any(domain in url for domain in ["youtube.com", "youtu.be"]):
         try:
-            # Ekstrak ID video YouTube
-            video_id = None
-            if "youtu.be/" in url:
-                video_id = url.split("youtu.be/")[1].split("?")[0]
-            elif "v=" in url:
-                video_id = re.findall(r"v=([a-zA-Z0-9_-]+)", url)
-                if video_id:
-                    video_id = video_id[0]
-            
-            if video_id:
-                # Daftar instance Invidious publik yang aktif
-                invidious_instances = [
-                    "https://iv.ggtyler.dev",
-                    "https://invidious.projectsegfault.net",
-                    "https://vid.priv.au"
-                ]
-                
-                downloaded = False
-                media_url = None
-                
-                for instance in invidious_instances:
-                    try:
-                        api_res = requests.get(f"{instance}/api/v1/videos/{video_id}", timeout=10)
-                        if api_res.status_code == 200:
-                            data = api_res.json()
-                            adaptive_formats = data.get("adaptiveFormats", [])
-                            # Cari format video + audio atau video mp4 dengan ukuran aman (<24MB)
-                            for fmt in adaptive_formats:
-                                if fmt.get("container") == "mp4" and "video" in fmt.get("type", ""):
-                                    media_url = fmt.get("url")
-                                    break
-                            if media_url:
-                                break
-                    except Exception:
-                        continue
+            api_url = "https://co.wuk.sh/api/json"
+            headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+            payload = {
+                "url": url,
+                "vQuality": "720"
+            }
+            response = requests.post(api_url, json=payload, headers=headers, timeout=20)
+            if response.status_code == 200:
+                res_data = response.json()
+                media_url = res_data.get("url") or res_data.get("picker", [{}])[0].get("url")
                 
                 if media_url:
                     file_resp = requests.get(media_url, stream=True, timeout=60)
-                    filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.mp4")
+                    ext = "mp4"
+                    if "webm" in file_resp.headers.get("content-type", ""):
+                        ext = "webm"
+                        
+                    filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.{ext}")
                     with open(filename, "wb") as f:
                         for chunk in file_resp.iter_content(chunk_size=8192):
                             if chunk:
                                 f.write(chunk)
-                    
-                    info = {"title": "YouTube Video", "extractor": "youtube"}
+                                
+                    info = {"title": res_data.get("filename", "YouTube Video"), "extractor": "youtube"}
                     return info, filename
         except Exception as e:
-            print(f"[INFO] Invidious API gagal, mencoba fallback: {e}")
+            print(f"[INFO] Cobalt API gagal, mencoba fallback: {e}")
 
-    # Fallback ke yt-dlp standar untuk platform lain (TikTok, IG, dll.)
+    # Fallback ke yt-dlp standar untuk platform lain (TikTok, Instagram, dll.)
     ydl_opts = {
         'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
