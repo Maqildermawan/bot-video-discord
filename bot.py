@@ -50,71 +50,22 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 
         await channel.send(embed=embed)
 
-import requests
-
 def download_media(url, unique_id):
-    """Mengunduh video YouTube melalui endpoint API publik alternatif yang stabil"""
+    """Mengunduh video menggunakan yt-dlp dengan konfigurasi web client yang dioptimalkan untuk cloud"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Jika URL adalah YouTube, gunakan API publik alternatif yang aktif
-    if any(domain in url for domain in ["youtube.com", "youtu.be"]):
-        try:
-            # Menggunakan API publik v2 yang stabil
-            api_url = "https://co.vosh.lol/api/json"  # Endpoint alternatif Cobalt yang aktif
-            headers = {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            }
-            payload = {
-                "url": url,
-                "vQuality": "720"
-            }
-            response = requests.post(api_url, json=payload, headers=headers, timeout=20)
-            if response.status_code == 200:
-                res_data = response.json()
-                media_url = res_data.get("url") or res_data.get("picker", [{}])[0].get("url")
-                
-                if media_url:
-                    file_resp = requests.get(media_url, stream=True, timeout=60)
-                    ext = "mp4"
-                    if "webm" in file_resp.headers.get("content-type", ""):
-                        ext = "webm"
-                        
-                    filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.{ext}")
-                    with open(filename, "wb") as f:
-                        for chunk in file_resp.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
-                                
-                    info = {"title": res_data.get("filename", "YouTube Video"), "extractor": "youtube"}
-                    return info, filename
-        except Exception as e:
-            print(f"[INFO] API alternatif pertama gagal, mencoba instance kedua: {e}")
-            try:
-                # Fallback ke instance publik lainnya
-                fallback_url = "https://cobalt.kwi.moe/api/json"
-                response = requests.post(fallback_url, json=payload, headers=headers, timeout=20)
-                if response.status_code == 200:
-                    res_data = response.json()
-                    media_url = res_data.get("url") or res_data.get("picker", [{}])[0].get("url")
-                    if media_url:
-                        file_resp = requests.get(media_url, stream=True, timeout=60)
-                        filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.mp4")
-                        with open(filename, "wb") as f:
-                            for chunk in file_resp.iter_content(chunk_size=8192):
-                                if chunk:
-                                    f.write(chunk)
-                        return {"title": "YouTube Video", "extractor": "youtube"}, filename
-            except Exception as e2:
-                print(f"[INFO] Semua API alternatif gagal: {e2}")
-
-    # Fallback ke yt-dlp standar untuk platform lain (TikTok, Instagram, dll.)
     ydl_opts = {
         'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['web']
+            }
+        },
+        'geo_bypass': True,
+        'nocheckcertificate': True,
         'cookiefile': None,
     }
 
