@@ -51,20 +51,22 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan kombinasi client web & android dengan format fleksibel"""
+    """Mengunduh video menggunakan player_client android dengan cookies.txt untuk bypass blokir bot"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
-        'format': 'bv*[filesize<24M]+ba/b[filesize<24M]/best',
+        'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        # Menggunakan client android agar terbebas dari proteksi web & n-challenge
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'android']
+                'player_client': ['android']
             }
         },
-        'cookiefile': None,
+        # Mengaktifkan kembali cookies.txt agar lolos dari verifikasi "Confirm you're not a bot"
+        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
