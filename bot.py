@@ -51,23 +51,21 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan player_client tv dan cookies.txt agar lolos blokir datacenter tanpa Node.js"""
+    """Mengunduh video menggunakan player_client android murni tanpa cookies untuk menghindari error page needs to be reloaded"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    has_cookies = os.path.exists('cookies.txt')
-    print(f"[INFO] Status cookies.txt ditemukan: {has_cookies}")
-
     ydl_opts = {
         'format': 'best[filesize<24M]/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        # Memaksa menggunakan client android murni tanpa cookies
         'extractor_args': {
             'youtube': {
-                'player_client': ['tv']
+                'player_client': ['android']
             }
         },
-        'cookiefile': 'cookies.txt' if has_cookies else None,
+        'cookiefile': None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
