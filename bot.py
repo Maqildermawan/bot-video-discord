@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan player_client ios murni tanpa cookies agar tidak diskip"""
+    """Mengunduh video menggunakan player_client web dengan User-Agent browser untuk bypass proteksi datacenter"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,13 +59,16 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client ios eksklusif
+        # Menggunakan client web standar
         'extractor_args': {
             'youtube': {
-                'player_client': ['ios']
+                'player_client': ['web']
             }
         },
-        # Wajib bernilai None agar client ios tidak diskip oleh yt-dlp
+        # Menyamarkan User-Agent agar terbaca sebagai browser Chrome di Windows
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
         'cookiefile': None,
     }
 
