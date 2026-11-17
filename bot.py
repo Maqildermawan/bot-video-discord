@@ -50,29 +50,64 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 
         await channel.send(embed=embed)
 
-from pytubefix import YouTube
-import os
+import requests
+import re
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan pytubefix untuk YouTube dan yt-dlp untuk platform lain"""
+    """Mengunduh video YouTube melalui Invidious API publik untuk bypass total blokir IP datacenter"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Jika tautan adalah YouTube, gunakan pytubefix yang tahan terhadap blokir IP datacenter
+    # Jika URL adalah YouTube, ekstrak Video ID dan ambil via Invidious API
     if any(domain in url for domain in ["youtube.com", "youtu.be"]):
         try:
-            yt = YouTube(url)
-            # Ambil stream dengan resolusi tertinggi yang ukurannya di bawah 24MB
-            stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
-            if not stream:
-                stream = yt.streams.filter(file_extension='mp4').first()
-                
-            filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.mp4")
-            stream.download(output_path=DOWNLOAD_DIR, filename=f"{unique_id}.mp4")
+            # Ekstrak ID video YouTube
+            video_id = None
+            if "youtu.be/" in url:
+                video_id = url.split("youtu.be/")[1].split("?")[0]
+            elif "v=" in url:
+                video_id = re.findall(r"v=([a-zA-Z0-9_-]+)", url)
+                if video_id:
+                    video_id = video_id[0]
             
-            info = {"title": yt.title, "extractor": "youtube"}
-            return info, filename
+            if video_id:
+                # Daftar instance Invidious publik yang aktif
+                invidious_instances = [
+                    "https://iv.ggtyler.dev",
+                    "https://invidious.projectsegfault.net",
+                    "https://vid.priv.au"
+                ]
+                
+                downloaded = False
+                media_url = None
+                
+                for instance in invidious_instances:
+                    try:
+                        api_res = requests.get(f"{instance}/api/v1/videos/{video_id}", timeout=10)
+                        if api_res.status_code == 200:
+                            data = api_res.json()
+                            adaptive_formats = data.get("adaptiveFormats", [])
+                            # Cari format video + audio atau video mp4 dengan ukuran aman (<24MB)
+                            for fmt in adaptive_formats:
+                                if fmt.get("container") == "mp4" and "video" in fmt.get("type", ""):
+                                    media_url = fmt.get("url")
+                                    break
+                            if media_url:
+                                break
+                    except Exception:
+                        continue
+                
+                if media_url:
+                    file_resp = requests.get(media_url, stream=True, timeout=60)
+                    filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.mp4")
+                    with open(filename, "wb") as f:
+                        for chunk in file_resp.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                    
+                    info = {"title": "YouTube Video", "extractor": "youtube"}
+                    return info, filename
         except Exception as e:
-            print(f"[INFO] Pytubefix gagal, mencoba metode cadangan: {e}")
+            print(f"[INFO] Invidious API gagal, mencoba fallback: {e}")
 
     # Fallback ke yt-dlp standar untuk platform lain (TikTok, IG, dll.)
     ydl_opts = {
