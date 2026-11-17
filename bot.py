@@ -50,59 +50,21 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
 
         await channel.send(embed=embed)
 
-import requests
-
 def download_media(url, unique_id):
-    """Mengunduh video YouTube melalui API publik pihak ketiga yang aman dari blokir IP datacenter Railway"""
+    """Mengunduh video menggunakan yt-dlp dengan client android murni tanpa JS runtime"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
-    # Jika URL adalah YouTube, gunakan API publik yang stabil
-    if any(domain in url for domain in ["youtube.com", "youtu.be"]):
-        try:
-            # Menggunakan API v2 dari savefrom/cobalt atau alternatif publik
-            api_url = f"https://api.cobalt.tools/api/json"
-            headers = {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-            }
-            payload = {
-                "url": url,
-                "vQuality": "720"
-            }
-            response = requests.post(api_url, json=payload, headers=headers, timeout=25)
-            res_data = response.json()
-            
-            if "url" in res_data:
-                media_url = res_data["url"]
-            elif "picker" in res_data and len(res_data["picker"]) > 0:
-                media_url = res_data["picker"][0]["url"]
-            else:
-                media_url = None
-
-            if media_url:
-                file_resp = requests.get(media_url, stream=True, timeout=60)
-                ext = "mp4"
-                if "webm" in file_resp.headers.get("content-type", ""):
-                    ext = "webm"
-                
-                filename = os.path.join(DOWNLOAD_DIR, f"{unique_id}.{ext}")
-                with open(filename, "wb") as f:
-                    for chunk in file_resp.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                
-                info = {"title": "YouTube Video", "extractor": "youtube"}
-                return info, filename
-        except Exception as e:
-            print(f"[INFO] Gagal mengunduh via API alternatif, beralih ke yt-dlp: {e}")
-
-    # Fallback ke yt-dlp standar untuk platform lain (TikTok, IG, dll.)
+    # Jika URL YouTube, gunakan player_client android yang stabil di cloud
     ydl_opts = {
-        'format': 'best[filesize<24M]/best',
+        'format': 'b / bv+ba/b',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android']
+            }
+        },
         'cookiefile': None,
     }
 
