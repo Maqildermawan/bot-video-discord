@@ -51,7 +51,7 @@ async def send_log(guild, user, action, details, file_path=None, file_name="vide
         await channel.send(embed=embed)
 
 def download_media(url, unique_id):
-    """Mengunduh video menggunakan player_client ios secara eksklusif untuk menghindari n-challenge & PO Token"""
+    """Mengunduh video menggunakan player_client ios dengan cookies.txt yang valid"""
     output_template = os.path.join(DOWNLOAD_DIR, f"{unique_id}.%(ext)s")
     
     ydl_opts = {
@@ -59,13 +59,14 @@ def download_media(url, unique_id):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        # Menggunakan client ios murni tanpa campuran client lain
+        # Menggunakan client ios
         'extractor_args': {
             'youtube': {
                 'player_client': ['ios']
             }
         },
-        'cookiefile': None,
+        # Mengaktifkan cookies.txt untuk autentikasi akun
+        'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
